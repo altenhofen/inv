@@ -8,12 +8,10 @@ import org.openpdf.text.*;
 import org.openpdf.text.pdf.*;
 
 // TODO: understand which methods and things can go to the abstract class
+// THIS IS VERY EXPERIMENTAL, just to see what i can roll
 public class DanfePdfRenderer extends PdfRenderer {
 
     private final Invoice invoice;
-    private static final Font FONT_NORMAL = FontFactory.getFont(FontFactory.HELVETICA, 7);
-    private static final Font FONT_BOLD = FontFactory.getFont(FontFactory.HELVETICA, 7, Font.BOLD);
-    private static final Font FONT_HEADER = FontFactory.getFont(FontFactory.HELVETICA, 8, Font.BOLD);
 
     public DanfePdfRenderer(Invoice invoice) {
         this.invoice = invoice;
@@ -35,6 +33,7 @@ public class DanfePdfRenderer extends PdfRenderer {
         renderItems(document);
         addSeparator(document);
         addTotal(document);
+        addQrCodeFooter(document);
     }
 
     // -----------------------------------------------------------------------
@@ -45,7 +44,7 @@ public class DanfePdfRenderer extends PdfRenderer {
         table.setWidthPercentage(100);
         // Reconsider DTO
 
-        DanfeHeader danfeHeader = new DanfeHeader(invoice.issuer().document(), invoice.issuer().name(), invoice.issuer().address());
+        DanfeHeader danfeHeader = new DanfeHeader(invoice.getIssuer().document(), invoice.getIssuer().name(), invoice.getIssuer().address());
         final String cnpj = danfeHeader.issuerDocument().getFormattedValue();
         final String razaoSocial = danfeHeader.issuerName();
         final String conventionalAddress = danfeHeader.address().getConventionalAddress();
@@ -94,7 +93,7 @@ public class DanfePdfRenderer extends PdfRenderer {
         table.addCell(createCell("Vl Total", FONT_BOLD, Element.ALIGN_RIGHT));
 
         // render items
-        for (Item item : this.invoice.items()) {
+        for (Item item : this.invoice.getItems()) {
             // todo renderer, factory creative;!!
             addItemRow(table, item.code(), item.description(), item.qty().toString(),  item.unit(), item.unitPrice().toString(), item.totalPrice().toString());
         }
@@ -146,6 +145,91 @@ public class DanfePdfRenderer extends PdfRenderer {
 
         doc.add(table);
     }
+
+     private void addQrCodeFooter(Document doc) throws DocumentException {
+         PdfPTable tableConsulta = new PdfPTable(1);
+         tableConsulta.setWidthPercentage(100);
+
+         PdfPCell cellMsg = createCell("Consulte pela Chave de Acesso em", FONT_NORMAL, Element.ALIGN_CENTER);
+         tableConsulta.addCell(cellMsg);
+
+         // URL (TODO: find it, document layout, etc);
+         PdfPCell cellUrl = createCell("www.fazenda.rj.gov.br/nfce/consulta", FONT_NORMAL, Element.ALIGN_CENTER);
+         tableConsulta.addCell(cellUrl);
+
+         // Chave de Acesso (Formatada com espaços para leitura fácil)
+         String chaveAcesso = "33150300000000000001650010000000011000000001";
+         String chaveFormatada = formatAccessKey(chaveAcesso);
+         PdfPCell cellChave = createCell(chaveFormatada, FONT_NORMAL, Element.ALIGN_CENTER);
+         tableConsulta.addCell(cellChave);
+
+         doc.add(tableConsulta);
+         doc.add(new Paragraph(" ", FONT_SMALL)); // Espacinho
+
+         // 2column table
+         // column 1 (35%): QR Code
+         // colukmn 2 (65%): texts (Consumidor, Protocolo)
+         PdfPTable tableDados = new PdfPTable(new float[]{3.5f, 6.5f});
+         tableDados.setWidthPercentage(100);
+
+         // --> left col: IMAGEM DO QR CODE
+         // URL SEFAZ (TODO: get theright ones)
+         String urlQrCode = "http://www.fazenda.rj.gov.br/nfce/qrcode?p=" + chaveAcesso + "|2|1|1|... (restante dos parametros)";
+
+         try {
+             Image qrImage = generateQrCode(urlQrCode, 100, 100);
+             PdfPCell cellQr = new PdfPCell(qrImage);
+             cellQr.setBorder(Rectangle.NO_BORDER);
+             cellQr.setHorizontalAlignment(Element.ALIGN_CENTER); //center qrcode on its column
+             cellQr.setVerticalAlignment(Element.ALIGN_TOP);
+             tableDados.addCell(cellQr);
+         } catch (Exception e) {
+             // fallback just so it doesnt crash
+             tableDados.addCell(createCell("[Erro QR]", FONT_NORMAL, Element.ALIGN_CENTER));
+         }
+
+         // --> right col: DADOS DO CONSUMIDOR E PROTOCOLO
+         PdfPCell cellInfo = new PdfPCell();
+         cellInfo.setBorder(Rectangle.NO_BORDER);
+         cellInfo.setHorizontalAlignment(Element.ALIGN_LEFT);
+
+         // build consumer text
+         Paragraph pConsumidor = new Paragraph();
+         pConsumidor.setLeading(9f); // Altura da linha apertada
+         pConsumidor.add(new Chunk("CONSUMIDOR - ", FONT_BOLD));
+         pConsumidor.add(new Chunk(this.invoice.getCustomer().document().getFormattedValue() + " ", FONT_NORMAL));
+         pConsumidor.add(new Chunk(this.invoice.getCustomer().address().getConventionalAddress(), FONT_NORMAL));
+         cellInfo.addElement(pConsumidor);
+
+         // NFC-e (Número, Série, Data)
+         Paragraph pNfce = new Paragraph();
+         pNfce.setLeading(10f);
+         pNfce.setSpacingBefore(4f);
+         pNfce.add(new Chunk("NFC-e nº 000000001  Série 001  10/03/2015 15:03:53", FONT_BOLD));
+         cellInfo.addElement(pNfce);
+
+         // Protocol
+         Paragraph pProt = new Paragraph();
+         pProt.setLeading(10f);
+         pProt.add(new Chunk("Protocolo de autorização: 314 1300004001 80", FONT_NORMAL));
+         cellInfo.addElement(pProt);
+
+         // Autorização
+         Paragraph pDataAuth = new Paragraph();
+         pDataAuth.setLeading(10f);
+         pDataAuth.add(new Chunk("Data de autorização: 10/03/2015 15:03:53", FONT_NORMAL));
+         cellInfo.addElement(pDataAuth);
+
+         tableDados.addCell(cellInfo);
+
+         doc.add(tableDados);
+
+         // end
+         Paragraph pTrib = new Paragraph("Tributos Totais Incidentes (Lei Federal 12.741/2012): R$65,62", FONT_NORMAL);
+         pTrib.setAlignment(Element.ALIGN_CENTER);
+         pTrib.setSpacingBefore(5f);
+         doc.add(pTrib);
+     }
 
     // helper
     private static void addItemRow(PdfPTable table, String code, String desc, String qty, String un, String valUnit, String valTotal) {
