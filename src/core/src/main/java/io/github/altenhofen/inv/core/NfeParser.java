@@ -92,7 +92,7 @@ public class NfeParser {
                 // Build address manually or use helper
             }
 
-            if (inPath("NFe", "infNFe", "det", "prod")) {
+            if (inPath("NFe", "infNFe", "det", "prod", localName)) {
                 switch (qName) {
                     case "cProd" -> currentItem.code(value);
                     case "xProd" -> currentItem.description(value);

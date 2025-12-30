@@ -11,11 +11,11 @@ import java.util.List;
 public record DanfeViewModel(
         String accessKey,     // 44 digits
         String accessKeyFormatted, // With spaces
-        DanfeIde ide
+        DanfeIde ide,
 //        String protocol,
 //        Issuer emitente,
 //        Receiver destinatario,
-//        List<Item> items,
+        List<Item> items
 //        Totals totals,
 //        String qrCodeBase64,  // Generated before rendering
 //        String barcodeBase64  // Generated before rendering
@@ -75,7 +75,8 @@ public record DanfeViewModel(
             return new DanfeViewModel(
                     this.accessKey,
                     this.accessKeyFormatted,
-                    danfeIde
+                    danfeIde,
+                    this.items
             );
         }
 
