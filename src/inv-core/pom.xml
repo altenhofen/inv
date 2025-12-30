@@ -8,7 +8,7 @@
     <version>0.1.0-SNAPSHOT</version>
   </parent>
   <groupId>io.github.altenhofen.inv</groupId>
-  <artifactId>inv-core</artifactId>
+  <artifactId>core</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <name>inv-core</name>
   <url>http://maven.apache.org</url>

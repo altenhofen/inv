@@ -1,4 +1,4 @@
-package io.github.altenhofen.inv;
+package io.github.altenhofen.inv.core.pdf;
 
 import junit.framework.Test;
 import junit.framework.TestCase;

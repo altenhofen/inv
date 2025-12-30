@@ -12,9 +12,6 @@
   </properties>
   <packaging>pom</packaging>
   <modules>
-    <!-- <module>inv-core</module> !-->
-    <!--      <module>inv-pdf</module> !-->
-    <!--      <module>inv-cli</module> !-->
     <module>inv-core</module>
     <module>inv-pdf</module>
     <module>inv-cli</module>
