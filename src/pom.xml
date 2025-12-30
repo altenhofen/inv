@@ -4,7 +4,7 @@
   <artifactId>inv</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <name>inv</name>
-  <url>http://www.github.com/altenhofen/inv</url>
+  <url>https://www.github.com/altenhofen/inv</url>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>21</maven.compiler.release>
@@ -12,9 +12,9 @@
   </properties>
   <packaging>pom</packaging>
   <modules>
-    <module>inv-core</module>
-    <module>inv-pdf</module>
-    <module>inv-cli</module>
+    <module>core</module>
+    <module>pdf</module>
+    <module>cli</module>
   </modules>
   <dependencyManagement>
     <dependencies>
